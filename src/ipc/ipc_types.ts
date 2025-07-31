@@ -270,15 +270,6 @@ export interface GetAppEnvVarsParams {
   appId: number;
 }
 
-export interface VercelDeployment {
-  uid: string;
-  url: string;
-  state: string;
-  createdAt: number;
-  target: string;
-  readyState: string;
-}
-
 export interface ConnectToExistingVercelProjectParams {
   projectId: string;
   appId: number;
@@ -296,6 +287,15 @@ export interface CreateVercelProjectParams {
 
 export interface GetVercelDeploymentsParams {
   appId: number;
+}
+
+export interface VercelDeployment {
+  uid: string;
+  url: string;
+  state: string;
+  createdAt: number;
+  target: string;
+  readyState: string;
 }
 
 export interface DisconnectVercelProjectParams {
