@@ -56,6 +56,29 @@ export function useSupabase() {
   );
 
   /**
+   * Create a new Supabase project
+   */
+  const createProject = useCallback(
+    async (name: string, appId: number) => {
+      setLoading(true);
+      try {
+        const newProject = await ipcClient.createSupabaseProject(name, appId);
+        setError(null);
+        // Reload projects to include the new one
+        await loadProjects();
+        return newProject;
+      } catch (error) {
+        console.error("Error creating Supabase project:", error);
+        setError(error instanceof Error ? error : new Error(String(error)));
+        throw error;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [ipcClient, setError, setLoading, loadProjects],
+  );
+
+  /**
    * Remove a Supabase project association from an app
    */
   const unsetAppProject = useCallback(
@@ -91,6 +114,7 @@ export function useSupabase() {
     error,
     selectedProject,
     loadProjects,
+    createProject,
     setAppProject,
     unsetAppProject,
     selectProject,

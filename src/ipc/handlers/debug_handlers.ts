@@ -1,7 +1,7 @@
 import { ipcMain } from "electron";
 import { platform, arch } from "os";
 import { SystemDebugInfo, ChatLogsData } from "../ipc_types";
-import { readSettings } from "../../main/settings";
+// import { readSettings } from "../../main/settings";
 
 import log from "electron-log";
 import path from "path";
@@ -61,10 +61,6 @@ async function getSystemDebugInfo({
     console.error("Failed to read package.json:", err);
   }
 
-  // Get telemetry info from settings
-  const settings = readSettings();
-  const telemetryId = settings.telemetryUserId || "unknown";
-
   // Get logs from electron-log
   let logs = "";
   try {
@@ -102,11 +98,8 @@ async function getSystemDebugInfo({
     nodeVersion,
     pnpmVersion,
     nodePath,
-    telemetryId,
     selectedLanguageModel:
       serializeModelForDebug(settings.selectedModel) || "unknown",
-    telemetryConsent: settings.telemetryConsent || "unknown",
-    telemetryUrl: "https://us.i.posthog.com", // Hardcoded from renderer.tsx
     dyadVersion,
     platform: process.platform,
     architecture: arch(),

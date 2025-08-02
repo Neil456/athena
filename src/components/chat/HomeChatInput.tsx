@@ -1,6 +1,6 @@
 import { SendIcon, StopCircleIcon } from "lucide-react";
 import type React from "react";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
 import { useSettings } from "@/hooks/useSettings";
 import { homeChatInputValueAtom } from "@/atoms/chatAtoms"; // Use a different atom for home input
@@ -10,17 +10,20 @@ import { useAttachments } from "@/hooks/useAttachments";
 import { AttachmentsList } from "./AttachmentsList";
 import { DragDropOverlay } from "./DragDropOverlay";
 import { FileAttachmentDropdown } from "./FileAttachmentDropdown";
-import { usePostHog } from "posthog-js/react";
+
 import { HomeSubmitOptions } from "@/pages/home";
 import { ChatInputControls } from "../ChatInputControls";
+import { useFileDropdown } from "@/hooks/useFileDropdown";
+import { FileDropdown } from "./FileDropdown";
+import { useContextTags } from "@/hooks/useContextTags";
+import { ContextTags } from "./ContextTags";
+import { useAppFiles } from "@/hooks/useAppFiles";
 export function HomeChatInput({
   onSubmit,
 }: {
   onSubmit: (options?: HomeSubmitOptions) => void;
 }) {
-  const posthog = usePostHog();
   const [inputValue, setInputValue] = useAtom(homeChatInputValueAtom);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { settings } = useSettings();
   const { isStreaming } = useStreamChat({
     hasChatId: false,
@@ -39,6 +42,28 @@ export function HomeChatInput({
     handlePaste,
   } = useAttachments();
 
+  // Use the file dropdown hook for @ file selection
+  const {
+    dropdownState,
+    textareaRef,
+    handleInputChange: handleFileDropdownInputChange,
+    handleFileSelect: handleFileDropdownFileSelect,
+    handleCloseDropdown,
+    handleKeyDown: handleFileDropdownKeyDown,
+  } = useFileDropdown();
+
+  // Use the context tags hook
+  const {
+    contextTags,
+    addContextTag,
+    removeContextTag,
+    clearContextTags,
+    getContextFiles,
+  } = useContextTags();
+
+  // Get all files for AI_RULES.md auto-addition
+  const { files: allFiles } = useAppFiles();
+
   const adjustHeight = () => {
     const textarea = textareaRef.current;
     if (textarea) {
@@ -52,8 +77,20 @@ export function HomeChatInput({
     adjustHeight();
   }, [inputValue]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+  // Combined input change handler
+  const handleInputChangeWithDropdown = (
+    e: React.ChangeEvent<HTMLTextAreaElement>,
+  ) => {
+    setInputValue(e.target.value);
+    handleFileDropdownInputChange(e);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Handle file dropdown navigation first
+    handleFileDropdownKeyDown(e);
+
+    // Then handle regular enter to submit
+    if (e.key === "Enter" && !e.shiftKey && !dropdownState.isVisible) {
       e.preventDefault();
       handleCustomSubmit();
     }
@@ -61,16 +98,24 @@ export function HomeChatInput({
 
   // Custom submit function that wraps the provided onSubmit
   const handleCustomSubmit = () => {
-    if ((!inputValue.trim() && attachments.length === 0) || isStreaming) {
+    if (
+      (!inputValue.trim() &&
+        attachments.length === 0 &&
+        contextTags.length === 0) ||
+      isStreaming
+    ) {
       return;
     }
 
-    // Call the parent's onSubmit handler with attachments
-    onSubmit({ attachments });
+    // Get context files for the message
+    const contextFiles = getContextFiles();
 
-    // Clear attachments as part of submission process
+    // Call the parent's onSubmit handler with attachments and context files
+    onSubmit({ attachments, contextFiles });
+
+    // Clear attachments and context tags as part of submission process
     clearAttachments();
-    posthog.capture("chat:home_submit");
+    clearContextTags();
   };
 
   if (!settings) {
@@ -79,6 +124,24 @@ export function HomeChatInput({
 
   return (
     <>
+      {/* File dropdown for @ mentions - rendered at document level */}
+      {dropdownState.isVisible && (
+        <FileDropdown
+          isVisible={dropdownState.isVisible}
+          onFileSelect={(file) =>
+            handleFileDropdownFileSelect(
+              file,
+              (file) => addContextTag(file, allFiles),
+              inputValue,
+              setInputValue,
+            )
+          }
+          onClose={handleCloseDropdown}
+          position={dropdownState.position}
+          searchTerm={dropdownState.searchTerm}
+        />
+      )}
+
       <div className="p-4" data-testid="home-chat-input-container">
         <div
           className={`relative flex flex-col space-y-2 border border-border rounded-lg bg-(--background-lighter) shadow-sm ${
@@ -88,6 +151,9 @@ export function HomeChatInput({
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
+          {/* Context tags for selected files */}
+          <ContextTags tags={contextTags} onRemove={removeContextTag} />
+
           {/* Attachments list */}
           <AttachmentsList
             attachments={attachments}
@@ -101,10 +167,10 @@ export function HomeChatInput({
             <textarea
               ref={textareaRef}
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
+              onChange={handleInputChangeWithDropdown}
               onKeyPress={handleKeyPress}
               onPaste={handlePaste}
-              placeholder="Ask Dyad to build..."
+              placeholder="Ask Athena to build... (Type @ to select files)"
               className="flex-1 p-2 focus:outline-none overflow-y-auto min-h-[40px] max-h-[200px]"
               style={{ resize: "none" }}
               disabled={isStreaming} // Should ideally reflect if *any* stream is happening

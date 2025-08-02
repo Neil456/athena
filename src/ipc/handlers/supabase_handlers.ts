@@ -9,6 +9,7 @@ import {
 } from "./safe_handle";
 import { handleSupabaseOAuthReturn } from "../../supabase_admin/supabase_return_handler";
 import { safeSend } from "../utils/safe_sender";
+import crypto from "crypto";
 
 const logger = log.scope("supabase_handlers");
 const handle = createLoggedHandler(logger);
@@ -19,6 +20,51 @@ export function registerSupabaseHandlers() {
     const supabase = await getSupabaseClient();
     return supabase.getProjects();
   });
+
+  // Create new Supabase project
+  handle(
+    "supabase:create-project",
+    async (_, { name, appId }: { name: string; appId: number }) => {
+      const supabase = await getSupabaseClient();
+
+      try {
+        logger.info(`Creating Supabase project: ${name} for app ${appId}`);
+
+        // Create the project using the Supabase Management API
+        const projectData = await supabase.createProject({
+          name: name,
+          organization_id: await getDefaultOrganizationId(supabase),
+          region: "us-east-1", // Default region
+          db_pass: generateSecurePassword(), // Generate a secure password
+        });
+
+        if (!projectData || !projectData.id) {
+          throw new Error("Failed to create project: No project ID returned.");
+        }
+
+        // Store project info in the app's DB row
+        await db
+          .update(apps)
+          .set({
+            supabaseProjectId: projectData.id,
+          })
+          .where(eq(apps.id, appId));
+
+        logger.info(
+          `Successfully created Supabase project: ${projectData.id} with name: ${projectData.name}`,
+        );
+
+        return projectData;
+      } catch (error) {
+        logger.error("[Supabase Handler] Failed to create project:", error);
+        throw new Error(
+          error instanceof Error
+            ? error.message
+            : "Failed to create Supabase project.",
+        );
+      }
+    },
+  );
 
   // Set app project - links a Dyad app to a Supabase project
   handle(
@@ -73,11 +119,34 @@ export function registerSupabaseHandlers() {
       // Simulate the deep link event
       safeSend(event.sender, "deep-link-received", {
         type: "supabase-oauth-return",
-        url: "https://supabase-oauth.dyad.sh/api/connect-supabase/login",
+        url: "https://athena-production-9c6e.up.railway.app/supabase/oauth/login",
       });
       logger.info(
         `Sent fake deep-link-received event for app ${appId} during testing.`,
       );
     },
   );
+}
+
+// Helper function to generate a secure password
+function generateSecurePassword(): string {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+// Helper function to get the default organization ID
+async function getDefaultOrganizationId(supabase: any): Promise<string> {
+  try {
+    const organizations = await supabase.getOrganizations();
+    if (organizations && organizations.length > 0) {
+      return organizations[0].id;
+    }
+    throw new Error(
+      "No organizations found. Please create an organization in Supabase first.",
+    );
+  } catch (error) {
+    logger.error("Failed to get default organization:", error);
+    throw new Error(
+      "Failed to get organization. Please ensure you have access to a Supabase organization.",
+    );
+  }
 }

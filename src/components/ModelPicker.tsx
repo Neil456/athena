@@ -201,7 +201,7 @@ export function ModelPicker() {
                           <div className="flex items-center gap-1.5">
                             {isSmartAutoEnabled && (
                               <span className="text-[10px] bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-600 bg-[length:200%_100%] animate-[shimmer_5s_ease-in-out_infinite] text-white px-1.5 py-0.5 rounded-full font-medium">
-                                Dyad Pro
+                                Athena Pro
                               </span>
                             )}
                             {model.tag && (

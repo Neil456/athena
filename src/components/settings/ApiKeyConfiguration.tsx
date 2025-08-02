@@ -29,7 +29,6 @@ interface ApiKeyConfigurationProps {
   onApiKeyInputChange: (value: string) => void;
   onSaveKey: () => Promise<void>;
   onDeleteKey: () => Promise<void>;
-  isDyad: boolean;
 }
 
 export function ApiKeyConfiguration({
@@ -44,7 +43,6 @@ export function ApiKeyConfiguration({
   onApiKeyInputChange,
   onSaveKey,
   onDeleteKey,
-  isDyad,
 }: ApiKeyConfigurationProps) {
   const envApiKey = envVarName ? envVars[envVarName] : undefined;
   const userApiKey = settings?.providerSettings?.[provider]?.apiKey?.value;
@@ -65,7 +63,7 @@ export function ApiKeyConfiguration({
   if (isValidUserKey || !hasEnvKey) {
     defaultAccordionValue.push("settings-key");
   }
-  if (!isDyad && hasEnvKey) {
+  if (hasEnvKey) {
     defaultAccordionValue.push("env-key");
   }
 
@@ -138,7 +136,7 @@ export function ApiKeyConfiguration({
         </AccordionContent>
       </AccordionItem>
 
-      {!isDyad && envVarName && (
+      {envVarName && (
         <AccordionItem
           value="env-key"
           className="border rounded-lg px-4 bg-(--background-lightest)"

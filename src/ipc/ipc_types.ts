@@ -112,9 +112,7 @@ export interface SystemDebugInfo {
   nodeVersion: string | null;
   pnpmVersion: string | null;
   nodePath: string | null;
-  telemetryId: string;
-  telemetryConsent: string;
-  telemetryUrl: string;
+
   dyadVersion: string;
   platform: string;
   architecture: string;

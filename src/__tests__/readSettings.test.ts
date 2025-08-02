@@ -67,8 +67,7 @@ describe("readSettings", () => {
             "provider": "auto",
           },
           "selectedTemplateId": "react",
-          "telemetryConsent": "unset",
-          "telemetryUserId": "[scrubbed]",
+
         }
       `);
     });
@@ -81,7 +80,7 @@ describe("readSettings", () => {
           name: "gpt-4",
           provider: "openai",
         },
-        telemetryConsent: "opted_in",
+
         hasRunBefore: true,
       };
 
@@ -98,7 +97,7 @@ describe("readSettings", () => {
         name: "gpt-4",
         provider: "openai",
       });
-      expect(result.telemetryConsent).toBe("opted_in");
+
       expect(result.hasRunBefore).toBe(true);
       // Should still have defaults for missing properties
       expect(result.enableAutoUpdate).toBe(true);
@@ -250,7 +249,7 @@ describe("readSettings", () => {
           name: "gpt-4",
           provider: "openai",
         },
-        telemetryConsent: "opted_in",
+
         hasRunBefore: true,
         // Extra fields that are not in the schema
         unknownField: "should be removed",
@@ -274,7 +273,7 @@ describe("readSettings", () => {
         name: "gpt-4",
         provider: "openai",
       });
-      expect(result.telemetryConsent).toBe("opted_in");
+
       expect(result.hasRunBefore).toBe(true);
 
       // Extra fields should be stripped by schema validation
@@ -313,8 +312,7 @@ describe("readSettings", () => {
             "provider": "auto",
           },
           "selectedTemplateId": "react",
-          "telemetryConsent": "unset",
-          "telemetryUserId": "[scrubbed]",
+          
         }
       `);
     });
@@ -400,6 +398,5 @@ describe("readSettings", () => {
 function scrubSettings(result: UserSettings) {
   return {
     ...result,
-    telemetryUserId: "[scrubbed]",
   };
 }

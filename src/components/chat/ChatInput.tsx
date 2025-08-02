@@ -18,7 +18,7 @@ import {
   SendHorizontalIcon,
 } from "lucide-react";
 import type React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { useSettings } from "@/hooks/useSettings";
 import { IpcClient } from "@/ipc/ipc_client";
@@ -43,7 +43,7 @@ import type { Message } from "@/ipc/ipc_types";
 import { isPreviewOpenAtom } from "@/atoms/viewAtoms";
 import { useRunApp } from "@/hooks/useRunApp";
 import { AutoApproveSwitch } from "../AutoApproveSwitch";
-import { usePostHog } from "posthog-js/react";
+
 import { CodeHighlight } from "./CodeHighlight";
 import { TokenBar } from "./TokenBar";
 import {
@@ -64,13 +64,16 @@ import { ChatErrorBox } from "./ChatErrorBox";
 import { selectedComponentPreviewAtom } from "@/atoms/previewAtoms";
 import { SelectedComponentDisplay } from "./SelectedComponentDisplay";
 import { useCheckProblems } from "@/hooks/useCheckProblems";
+import { useFileDropdown } from "@/hooks/useFileDropdown";
+import { FileDropdown } from "./FileDropdown";
+import { useContextTags } from "@/hooks/useContextTags";
+import { ContextTags } from "./ContextTags";
+import { useAppFiles } from "@/hooks/useAppFiles";
 
 const showTokenBarAtom = atom(false);
 
 export function ChatInput({ chatId }: { chatId?: number }) {
-  const posthog = usePostHog();
   const [inputValue, setInputValue] = useAtom(chatInputValueAtom);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { settings } = useSettings();
   const appId = useAtomValue(selectedAppIdAtom);
   const { refreshVersions } = useVersions(appId);
@@ -98,6 +101,28 @@ export function ChatInput({ chatId }: { chatId?: number }) {
     clearAttachments,
     handlePaste,
   } = useAttachments();
+
+  // Use the file dropdown hook for @ file selection
+  const {
+    dropdownState,
+    textareaRef,
+    handleInputChange: handleFileDropdownInputChange,
+    handleFileSelect: handleFileDropdownFileSelect,
+    handleCloseDropdown,
+    handleKeyDown: handleFileDropdownKeyDown,
+  } = useFileDropdown();
+
+  // Use the context tags hook
+  const {
+    contextTags,
+    addContextTag,
+    removeContextTag,
+    clearContextTags,
+    getContextFiles,
+  } = useContextTags();
+
+  // Get all files for AI_RULES.md auto-addition
+  const { files: allFiles } = useAppFiles();
 
   // Use the hook to fetch the proposal
   const {
@@ -136,8 +161,20 @@ export function ChatInput({ chatId }: { chatId?: number }) {
     setMessages(chat.messages);
   }, [chatId, setMessages]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+  // Combined input change handler
+  const handleInputChangeWithDropdown = (
+    e: React.ChangeEvent<HTMLTextAreaElement>,
+  ) => {
+    setInputValue(e.target.value);
+    handleFileDropdownInputChange(e);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Handle file dropdown navigation first
+    handleFileDropdownKeyDown(e);
+
+    // Then handle regular enter to submit
+    if (e.key === "Enter" && !e.shiftKey && !dropdownState.isVisible) {
       e.preventDefault();
       handleSubmit();
     }
@@ -145,7 +182,9 @@ export function ChatInput({ chatId }: { chatId?: number }) {
 
   const handleSubmit = async () => {
     if (
-      (!inputValue.trim() && attachments.length === 0) ||
+      (!inputValue.trim() &&
+        attachments.length === 0 &&
+        contextTags.length === 0) ||
       isStreaming ||
       !chatId
     ) {
@@ -156,7 +195,10 @@ export function ChatInput({ chatId }: { chatId?: number }) {
     setInputValue("");
     setSelectedComponent(null);
 
-    // Send message with attachments and clear them after sending
+    // Get context files for the message
+    const _contextFiles = getContextFiles();
+
+    // Send message with attachments and context files
     await streamMessage({
       prompt: currentInput,
       chatId,
@@ -165,7 +207,7 @@ export function ChatInput({ chatId }: { chatId?: number }) {
       selectedComponent,
     });
     clearAttachments();
-    posthog.capture("chat:submit");
+    clearContextTags();
   };
 
   const handleCancel = () => {
@@ -186,7 +228,6 @@ export function ChatInput({ chatId }: { chatId?: number }) {
       `Approving proposal for chatId: ${chatId}, messageId: ${messageId}`,
     );
     setIsApproving(true);
-    posthog.capture("chat:approve");
     try {
       const result = await IpcClient.getInstance().approveProposal({
         chatId,
@@ -196,7 +237,6 @@ export function ChatInput({ chatId }: { chatId?: number }) {
         showExtraFilesToast({
           files: result.extraFiles,
           error: result.extraFilesError,
-          posthog,
         });
       }
     } catch (err) {
@@ -223,7 +263,6 @@ export function ChatInput({ chatId }: { chatId?: number }) {
       `Rejecting proposal for chatId: ${chatId}, messageId: ${messageId}`,
     );
     setIsRejecting(true);
-    posthog.capture("chat:reject");
     try {
       await IpcClient.getInstance().rejectProposal({
         chatId,
@@ -247,6 +286,24 @@ export function ChatInput({ chatId }: { chatId?: number }) {
 
   return (
     <>
+      {/* File dropdown for @ mentions - rendered at document level */}
+      {dropdownState.isVisible && (
+        <FileDropdown
+          isVisible={dropdownState.isVisible}
+          onFileSelect={(file) =>
+            handleFileDropdownFileSelect(
+              file,
+              (file) => addContextTag(file, allFiles),
+              inputValue,
+              setInputValue,
+            )
+          }
+          onClose={handleCloseDropdown}
+          position={dropdownState.position}
+          searchTerm={dropdownState.searchTerm}
+        />
+      )}
+
       {error && showError && (
         <ChatErrorBox
           onDismiss={dismissError}
@@ -297,6 +354,9 @@ export function ChatInput({ chatId }: { chatId?: number }) {
 
           <SelectedComponentDisplay />
 
+          {/* Context tags for selected files */}
+          <ContextTags tags={contextTags} onRemove={removeContextTag} />
+
           {/* Use the AttachmentsList component */}
           <AttachmentsList
             attachments={attachments}
@@ -310,10 +370,10 @@ export function ChatInput({ chatId }: { chatId?: number }) {
             <textarea
               ref={textareaRef}
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
+              onChange={handleInputChangeWithDropdown}
               onKeyPress={handleKeyPress}
               onPaste={handlePaste}
-              placeholder="Ask Dyad to build..."
+              placeholder="Ask Athena to build... (Type @ to select files)"
               className="flex-1 p-2 focus:outline-none overflow-y-auto min-h-[40px] max-h-[200px]"
               style={{ resize: "none" }}
             />
@@ -488,15 +548,13 @@ function WriteCodeProperlyButton() {
 
 function RebuildButton() {
   const { restartApp } = useRunApp();
-  const posthog = usePostHog();
   const selectedAppId = useAtomValue(selectedAppIdAtom);
 
   const onClick = useCallback(async () => {
     if (!selectedAppId) return;
 
-    posthog.capture("action:rebuild");
     await restartApp({ removeNodeModules: true });
-  }, [selectedAppId, posthog, restartApp]);
+  }, [selectedAppId, restartApp]);
 
   return (
     <SuggestionButton onClick={onClick} tooltipText="Rebuild the application">
@@ -507,15 +565,13 @@ function RebuildButton() {
 
 function RestartButton() {
   const { restartApp } = useRunApp();
-  const posthog = usePostHog();
   const selectedAppId = useAtomValue(selectedAppIdAtom);
 
   const onClick = useCallback(async () => {
     if (!selectedAppId) return;
 
-    posthog.capture("action:restart");
     await restartApp();
-  }, [selectedAppId, posthog, restartApp]);
+  }, [selectedAppId, restartApp]);
 
   return (
     <SuggestionButton
@@ -529,12 +585,10 @@ function RestartButton() {
 
 function RefreshButton() {
   const { refreshAppIframe } = useRunApp();
-  const posthog = usePostHog();
 
   const onClick = useCallback(() => {
-    posthog.capture("action:refresh");
     refreshAppIframe();
-  }, [posthog, refreshAppIframe]);
+  }, [refreshAppIframe]);
 
   return (
     <SuggestionButton

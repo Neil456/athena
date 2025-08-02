@@ -188,6 +188,7 @@ function parseCustomTags(content: string): ContentPiece[] {
     "dyad-chat-summary",
     "dyad-edit",
     "dyad-codebase-context",
+    "dyad-command",
     "think",
   ];
 
@@ -413,6 +414,10 @@ function renderCustomTag(
           {content}
         </DyadProblemSummary>
       );
+
+    case "dyad-command":
+      // Don't render anything for dyad-command - it's handled by the proposal system
+      return null;
 
     case "dyad-chat-summary":
       // Don't render anything for dyad-chat-summary

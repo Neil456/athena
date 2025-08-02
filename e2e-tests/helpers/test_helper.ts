@@ -49,21 +49,6 @@ export class ContextFilesPickerDialog {
   }
 }
 
-class ProModesDialog {
-  constructor(
-    public page: Page,
-    public close: () => Promise<void>,
-  ) {}
-
-  async toggleSmartContext() {
-    await this.page.getByRole("switch", { name: "Smart Context" }).click();
-  }
-
-  async toggleTurboEdits() {
-    await this.page.getByRole("switch", { name: "Turbo Edits" }).click();
-  }
-}
-
 class GitHubConnector {
   constructor(public page: Page) {}
 
@@ -326,21 +311,6 @@ export class PageObject {
     await contextButton.click();
     return new ContextFilesPickerDialog(this.page, async () => {
       await contextButton.click();
-    });
-  }
-
-  async openProModesDialog({
-    location = "chat-input-container",
-  }: {
-    location?: "chat-input-container" | "home-chat-input-container";
-  } = {}): Promise<ProModesDialog> {
-    const proButton = this.page
-      // Assumes you're on the chat page.
-      .getByTestId(location)
-      .getByRole("button", { name: "Pro", exact: true });
-    await proButton.click();
-    return new ProModesDialog(this.page, async () => {
-      await proButton.click();
     });
   }
 
@@ -633,7 +603,7 @@ export class PageObject {
   }
 
   getChatInput() {
-    return this.page.getByRole("textbox", { name: "Ask Dyad to build..." });
+    return this.page.getByRole("textbox", { name: "Ask Athena to build..." });
   }
 
   clickNewChat({ index = 0 }: { index?: number } = {}) {
@@ -827,9 +797,7 @@ export class PageObject {
   async snapshotSettings() {
     const settings = path.join(this.userDataDir, "user-settings.json");
     const settingsContent = fs.readFileSync(settings, "utf-8");
-    //  Sanitize the "telemetryUserId" since it's a UUID
     const sanitizedSettingsContent = settingsContent
-      .replace(/"telemetryUserId": "[^"]*"/g, '"telemetryUserId": "[UUID]"')
       // Don't snapshot this otherwise it'll diff with every release.
       .replace(
         /"lastShownReleaseNotesVersion": "[^"]*"/g,
@@ -850,18 +818,6 @@ export class PageObject {
     await this.page
       .getByRole("option", { name: channel === "stable" ? "Stable" : "Beta" })
       .click();
-  }
-
-  async clickTelemetryAccept() {
-    await this.page.getByTestId("telemetry-accept-button").click();
-  }
-
-  async clickTelemetryReject() {
-    await this.page.getByTestId("telemetry-reject-button").click();
-  }
-
-  async clickTelemetryLater() {
-    await this.page.getByTestId("telemetry-later-button").click();
   }
 
   async goToAppsTab() {

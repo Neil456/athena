@@ -180,7 +180,7 @@ function ConnectedGitHubConnector({
               onClick={(e) => {
                 e.preventDefault();
                 IpcClient.getInstance().openExternalUrl(
-                  "https://www.dyad.sh/docs/integrations/github#troubleshooting",
+                  "https://athena-production-9c6e.up.railway.app/docs/github-troubleshooting",
                 );
               }}
               className="cursor-pointer text-blue-600 hover:underline dark:text-blue-400"

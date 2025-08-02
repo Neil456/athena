@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 import { IpcClient } from "@/ipc/ipc_client";
 import { toast } from "sonner";
@@ -42,6 +43,17 @@ export function SupabaseConnector({ appId }: { appId: number }) {
   const { app, refreshApp } = useLoadApp(appId);
   const { lastDeepLink } = useDeepLink();
   const { isDarkMode } = useTheme();
+
+  // Project creation state
+  const [projectSetupMode, setProjectSetupMode] = useState<
+    "create" | "existing"
+  >("existing");
+  const [projectName, setProjectName] = useState("");
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [createProjectError, setCreateProjectError] = useState<string | null>(
+    null,
+  );
+
   useEffect(() => {
     const handleDeepLink = async () => {
       if (lastDeepLink?.type === "supabase-oauth-return") {
@@ -56,6 +68,7 @@ export function SupabaseConnector({ appId }: { appId: number }) {
     loading,
     error,
     loadProjects,
+    createProject,
     setAppProject,
     unsetAppProject,
   } = useSupabase();
@@ -75,6 +88,29 @@ export function SupabaseConnector({ appId }: { appId: number }) {
       await refreshApp();
     } catch (error) {
       toast.error("Failed to connect project to app: " + error);
+    }
+  };
+
+  const handleCreateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!projectName.trim()) return;
+
+    setIsCreatingProject(true);
+    setCreateProjectError(null);
+
+    try {
+      await createProject(projectName.trim(), appId);
+      toast.success("Project created and connected successfully");
+      setProjectName("");
+      setProjectSetupMode("existing");
+      await refreshApp();
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to create project";
+      setCreateProjectError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsCreatingProject(false);
     }
   };
 
@@ -156,37 +192,92 @@ export function SupabaseConnector({ appId }: { appId: number }) {
             </div>
           ) : (
             <div className="space-y-4">
-              {projects.length === 0 ? (
-                <p className="text-sm text-gray-500">
-                  No projects found in your Supabase account.
-                </p>
-              ) : (
-                <>
+              {/* Project Setup Mode Toggle */}
+              <div className="flex space-x-2">
+                <Button
+                  variant={
+                    projectSetupMode === "existing" ? "default" : "outline"
+                  }
+                  size="sm"
+                  onClick={() => setProjectSetupMode("existing")}
+                >
+                  Use Existing Project
+                </Button>
+                <Button
+                  variant={
+                    projectSetupMode === "create" ? "default" : "outline"
+                  }
+                  size="sm"
+                  onClick={() => setProjectSetupMode("create")}
+                >
+                  Create New Project
+                </Button>
+              </div>
+
+              {projectSetupMode === "create" ? (
+                // Create New Project Form
+                <form onSubmit={handleCreateProject} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="project-select">Project</Label>
-                    <Select
-                      value={currentProjectId || ""}
-                      onValueChange={handleProjectSelect}
-                    >
-                      <SelectTrigger id="project-select">
-                        <SelectValue placeholder="Select a project" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {projects.map((project) => (
-                          <SelectItem key={project.id} value={project.id}>
-                            {project.name || project.id}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="project-name">Project Name</Label>
+                    <Input
+                      id="project-name"
+                      value={projectName}
+                      onChange={(e) => setProjectName(e.target.value)}
+                      placeholder="Enter project name"
+                      disabled={isCreatingProject}
+                    />
                   </div>
 
-                  {currentProjectId && (
-                    <div className="text-sm text-gray-500">
-                      This app is connected to project:{" "}
-                      {projects.find((p) => p.id === currentProjectId)?.name ||
-                        currentProjectId}
-                    </div>
+                  {createProjectError && (
+                    <p className="text-sm text-red-500">{createProjectError}</p>
+                  )}
+
+                  <Button
+                    type="submit"
+                    disabled={!projectName.trim() || isCreatingProject}
+                    className="w-full"
+                  >
+                    {isCreatingProject
+                      ? "Creating Project..."
+                      : "Create Project"}
+                  </Button>
+                </form>
+              ) : (
+                // Existing Projects Selection
+                <>
+                  {projects.length === 0 ? (
+                    <p className="text-sm text-gray-500">
+                      No projects found in your Supabase account.
+                    </p>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="project-select">Project</Label>
+                        <Select
+                          value={currentProjectId || ""}
+                          onValueChange={handleProjectSelect}
+                        >
+                          <SelectTrigger id="project-select">
+                            <SelectValue placeholder="Select a project" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {projects.map((project) => (
+                              <SelectItem key={project.id} value={project.id}>
+                                {project.name || project.id}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {currentProjectId && (
+                        <div className="text-sm text-gray-500">
+                          This app is connected to project:{" "}
+                          {projects.find((p) => p.id === currentProjectId)
+                            ?.name || currentProjectId}
+                        </div>
+                      )}
+                    </>
                   )}
                 </>
               )}
@@ -210,7 +301,7 @@ export function SupabaseConnector({ appId }: { appId: number }) {
               });
             } else {
               await IpcClient.getInstance().openExternalUrl(
-                "https://supabase-oauth.dyad.sh/api/connect-supabase/login",
+                "https://athena-production-9c6e.up.railway.app/supabase/oauth/login",
               );
             }
           }}

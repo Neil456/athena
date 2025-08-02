@@ -139,8 +139,7 @@ export const UserSettingsSchema = z.object({
   vercelAccessToken: SecretSchema.optional(),
   supabase: SupabaseSchema.optional(),
   autoApproveChanges: z.boolean().optional(),
-  telemetryConsent: z.enum(["opted_in", "opted_out", "unset"]).optional(),
-  telemetryUserId: z.string().optional(),
+
   hasRunBefore: z.boolean().optional(),
   enableDyadPro: z.boolean().optional(),
   experiments: ExperimentsSchema.optional(),

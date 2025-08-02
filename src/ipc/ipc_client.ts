@@ -766,6 +766,16 @@ export class IpcClient {
     return this.ipcRenderer.invoke("supabase:list-projects");
   }
 
+  public async createSupabaseProject(
+    name: string,
+    appId: number,
+  ): Promise<any> {
+    return this.ipcRenderer.invoke("supabase:create-project", {
+      name,
+      appId,
+    });
+  }
+
   public async setSupabaseAppProject(
     project: string,
     app: number,

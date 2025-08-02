@@ -56,7 +56,7 @@ export function Message({ spans }: MessageConfig) {
 export const TURBO_EDITS_PROMO_MESSAGE: MessageConfig = {
   spans: [
     { type: "text", content: "Tired of waiting on AI?" },
-    { type: "link", content: " Get Dyad Pro", url: "https://dyad.sh/pro#ai" },
+    { type: "link", content: " Get Athena Pro", url: "https://dyad.sh/pro#ai" },
     { type: "text", content: " for faster edits with Turbo Edits." },
   ],
 };
@@ -66,7 +66,7 @@ export const SMART_CONTEXT_PROMO_MESSAGE: MessageConfig = {
     { type: "text", content: "Save up to 5x on AI costs with " },
     {
       type: "link",
-      content: "Dyad Pro's Smart Context",
+      content: "Athena Pro's Smart Context",
       url: "https://dyad.sh/pro#ai",
     },
   ],
@@ -90,7 +90,7 @@ export const REDDIT_TIP: MessageConfig = {
     },
     {
       type: "link",
-      content: "Dyad subreddit",
+      content: "Athena subreddit",
       url: "https://www.reddit.com/r/dyadbuilders/",
     },
   ],
@@ -124,7 +124,7 @@ export const BUILD_A_BIBLE_APP_TIP: MessageConfig = {
     },
     {
       type: "text",
-      content: " the creator of Dyad build a Bible app step-by-step",
+      content: " the creator of Athena build a Bible app step-by-step",
     },
   ],
 };
@@ -182,34 +182,18 @@ export const ROADMAP_TIP: MessageConfig = {
   ],
 };
 
-// Like Dyad? Star it on GitHub https://github.com/dyad-sh/dyad/
-export const GITHUB_TIP: MessageConfig = {
-  spans: [
-    {
-      type: "text",
-      content: "Like Dyad? Star it on ",
-    },
-    {
-      type: "link",
-      content: "GitHub",
-      url: "https://github.com/dyad-sh/dyad",
-    },
-  ],
-};
 // Array of all available messages for rotation
 const ALL_MESSAGES = [
-  TURBO_EDITS_PROMO_MESSAGE,
-  SMART_CONTEXT_PROMO_MESSAGE,
+  // TURBO_EDITS_PROMO_MESSAGE,
+  // SMART_CONTEXT_PROMO_MESSAGE,
   DIFFERENT_MODEL_TIP,
-  REDDIT_TIP,
-  REPORT_A_BUG_TIP,
-  UPLOAD_CHAT_TIP,
-  BUILD_A_BIBLE_APP_TIP,
+  // REPORT_A_BUG_TIP,
+  // UPLOAD_CHAT_TIP,
+  // BUILD_A_BIBLE_APP_TIP,
   DEBUGGING_TIPS_TIP,
   AI_RULES_TIP,
   NEW_CHAT_TIP,
-  ROADMAP_TIP,
-  GITHUB_TIP,
+  // ROADMAP_TIP,
 ];
 
 // Main PromoMessage component using the modular system

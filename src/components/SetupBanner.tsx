@@ -23,7 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { NodeSystemInfo } from "@/ipc/ipc_types";
-import { usePostHog } from "posthog-js/react";
+
 import { useLanguageModelProviders } from "@/hooks/useLanguageModelProviders";
 type NodeInstallStep =
   | "install"
@@ -32,7 +32,6 @@ type NodeInstallStep =
   | "finished-checking";
 
 export function SetupBanner() {
-  const posthog = usePostHog();
   const navigate = useNavigate();
   const { isAnyProviderSetup, isLoading: loading } =
     useLanguageModelProviders();
@@ -59,7 +58,6 @@ export function SetupBanner() {
   }, [checkNode]);
 
   const handleAiSetupClick = () => {
-    posthog.capture("setup-flow:ai-provider-setup:google:click");
     navigate({
       to: providerSettingsRoute.id,
       params: { provider: "google" },
@@ -67,20 +65,17 @@ export function SetupBanner() {
   };
 
   const handleOtherProvidersClick = () => {
-    posthog.capture("setup-flow:ai-provider-setup:other:click");
     navigate({
       to: settingsRoute.id,
     });
   };
 
   const handleNodeInstallClick = useCallback(async () => {
-    posthog.capture("setup-flow:start-node-install-click");
     setNodeInstallStep("waiting-for-continue");
     IpcClient.getInstance().openExternalUrl(nodeSystemInfo!.nodeDownloadUrl);
   }, [nodeSystemInfo, setNodeInstallStep]);
 
   const finishNodeInstall = useCallback(async () => {
-    posthog.capture("setup-flow:continue-node-install-click");
     setNodeInstallStep("continue-processing");
     await IpcClient.getInstance().reloadEnvPath();
     await checkNode();
@@ -125,7 +120,7 @@ export function SetupBanner() {
   return (
     <>
       <p className="text-xl text-zinc-700 dark:text-zinc-300 p-4">
-        Follow these steps and you'll be ready to start building with Dyad...
+        Follow these steps and you'll be ready to start building with Athena...
       </p>
       <div className={bannerClasses}>
         <Accordion
@@ -343,7 +338,8 @@ function NodeInstallButton({
     case "finished-checking":
       return (
         <div className="mt-3 text-sm text-red-600 dark:text-red-400">
-          Node.js not detected. Closing and re-opening Dyad usually fixes this.
+          Node.js not detected. Closing and re-opening Athena usually fixes
+          this.
         </div>
       );
     default:

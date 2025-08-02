@@ -3,7 +3,7 @@ import path from "node:path";
 import { getUserDataPath } from "../paths/paths";
 import { UserSettingsSchema, type UserSettings, Secret } from "../lib/schemas";
 import { safeStorage } from "electron";
-import { v4 as uuidv4 } from "uuid";
+// import { v4 as uuidv4 } from "uuid";
 import log from "electron-log";
 import { DEFAULT_TEMPLATE_ID } from "@/shared/templates";
 
@@ -17,8 +17,7 @@ const DEFAULT_SETTINGS: UserSettings = {
     provider: "auto",
   },
   providerSettings: {},
-  telemetryConsent: "unset",
-  telemetryUserId: uuidv4(),
+
   hasRunBefore: false,
   experiments: {},
   enableProLazyEditsMode: true,

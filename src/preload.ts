@@ -69,6 +69,7 @@ const validInvokeChannels = [
   "reject-proposal",
   "get-system-debug-info",
   "supabase:list-projects",
+  "supabase:create-project",
   "supabase:set-app-project",
   "supabase:unset-app-project",
   "local-models:list-ollama",

@@ -198,7 +198,7 @@ export const CLOUD_PROVIDERS: Record<
     gatewayPrefix: "openrouter/",
   },
   auto: {
-    displayName: "Dyad",
+    displayName: "Athena",
     websiteUrl: "https://academy.dyad.sh/settings",
     gatewayPrefix: "dyad/",
   },

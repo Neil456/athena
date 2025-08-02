@@ -24,7 +24,7 @@ import { useSearch } from "@tanstack/react-router";
 import { useRunApp } from "./useRunApp";
 import { useCountTokens } from "./useCountTokens";
 import { useUserBudgetInfo } from "./useUserBudgetInfo";
-import { usePostHog } from "posthog-js/react";
+
 import { useCheckProblems } from "./useCheckProblems";
 import { useSettings } from "./useSettings";
 
@@ -49,7 +49,7 @@ export function useStreamChat({
   const { refetchUserBudget } = useUserBudgetInfo();
   const { checkProblems } = useCheckProblems(selectedAppId);
   const { settings } = useSettings();
-  const posthog = usePostHog();
+
   let chatId: number | undefined;
 
   if (hasChatId) {
@@ -109,7 +109,6 @@ export function useStreamChat({
               showExtraFilesToast({
                 files: response.extraFiles,
                 error: response.extraFilesError,
-                posthog,
               });
             }
             refreshProposal(chatId);

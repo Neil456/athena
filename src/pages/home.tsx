@@ -11,8 +11,7 @@ import { isPreviewOpenAtom } from "@/atoms/viewAtoms";
 import { useState, useEffect, useCallback } from "react";
 import { useStreamChat } from "@/hooks/useStreamChat";
 import { HomeChatInput } from "@/components/chat/HomeChatInput";
-import { usePostHog } from "posthog-js/react";
-import { PrivacyBanner } from "@/components/TelemetryBanner";
+
 import { INSPIRATION_PROMPTS } from "@/prompts/inspiration_prompts";
 import { useAppVersion } from "@/hooks/useAppVersion";
 import {
@@ -30,10 +29,12 @@ import { invalidateAppQuery } from "@/hooks/useLoadApp";
 import { useQueryClient } from "@tanstack/react-query";
 
 import type { FileAttachment } from "@/ipc/ipc_types";
+import type { AppFile } from "@/hooks/useAppFiles";
 
 // Adding an export for attachments
 export interface HomeSubmitOptions {
   attachments?: FileAttachment[];
+  contextFiles?: AppFile[];
 }
 
 export default function HomePage() {
@@ -46,7 +47,7 @@ export default function HomePage() {
   const setIsPreviewOpen = useSetAtom(isPreviewOpenAtom);
   const [isLoading, setIsLoading] = useState(false);
   const { streamMessage } = useStreamChat({ hasChatId: false });
-  const posthog = usePostHog();
+
   const appVersion = useAppVersion();
   const [releaseNotesOpen, setReleaseNotesOpen] = useState(false);
   const [releaseUrl, setReleaseUrl] = useState("");
@@ -111,8 +112,14 @@ export default function HomePage() {
 
   const handleSubmit = async (options?: HomeSubmitOptions) => {
     const attachments = options?.attachments || [];
+    const contextFiles = options?.contextFiles || [];
 
-    if (!inputValue.trim() && attachments.length === 0) return;
+    if (
+      !inputValue.trim() &&
+      attachments.length === 0 &&
+      contextFiles.length === 0
+    )
+      return;
 
     try {
       setIsLoading(true);
@@ -121,7 +128,7 @@ export default function HomePage() {
         name: generateCuteAppName(),
       });
 
-      // Stream the message with attachments
+      // Stream the message with attachments and context files
       streamMessage({
         prompt: inputValue,
         chatId: result.chatId,
@@ -136,7 +143,7 @@ export default function HomePage() {
       setIsPreviewOpen(false);
       await refreshApps(); // Ensure refreshApps is awaited if it's async
       await invalidateAppQuery(queryClient, { appId: result.app.id });
-      posthog.capture("home:chat-submit");
+
       navigate({ to: "/chat", search: { id: result.chatId } });
     } catch (error) {
       console.error("Failed to create chat:", error);
@@ -232,7 +239,6 @@ export default function HomePage() {
           </button>
         </div>
       </div>
-      <PrivacyBanner />
 
       {/* Release Notes Dialog */}
       <Dialog open={releaseNotesOpen} onOpenChange={setReleaseNotesOpen}>

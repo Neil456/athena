@@ -54,8 +54,8 @@ const config: ForgeConfig = {
   packagerConfig: {
     protocols: [
       {
-        name: "Dyad",
-        schemes: ["dyad"],
+        name: "Athena",
+        schemes: ["athena"],
       },
     ],
     icon: "./assets/icon/logo",
