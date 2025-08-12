@@ -2,8 +2,9 @@
 
 Athena is a local, open-source AI app builder. It's fast, private and fully under your control — like Lovable, v0, or Bolt, but running right on your machine.
 
-![Image](https://github.com/user-attachments/assets/f6c83dfc-6ffd-4d32-93dd-4b9c46d17790)
+<img width="959" height="554" alt="athena_home_page" src="https://github.com/user-attachments/assets/a0c5518a-5355-4d71-8489-05d4763c8874" />
 
+https://athena-production-9c6e.up.railway.app/
 
 ## 🚀 Features
 
